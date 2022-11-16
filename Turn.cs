@@ -35,9 +35,9 @@ namespace Turn
             foreach (var turn in Rules)
             {
                 var tl = new TcpListener(turn.Item1);
-                tl.Start();
                 TcpListeners.Add(tl);
                 dict.Add(tl, turn.Item2);
+                tl.Start();
             }
 
             Started = true;
@@ -82,9 +82,11 @@ namespace Turn
             {
                 TcpClient? tc0 = null;
                 TcpClient? tc1 = null;
+
                 try
                 {
                     tc0 = await tl.AcceptTcpClientAsync().ConfigureAwait(false);
+                    
                     tc1 = new TcpClient();
                     await tc1.ConnectAsync(target.Address, target.Port).ConfigureAwait(false);
 
@@ -135,7 +137,7 @@ namespace Turn
 
             try
             {
-                while (true)
+                while (Started)
                 {
                     var count = await s0.ReadAsync(buffer, 0, buffer.Length).ConfigureAwait(false);
                     await s1.WriteAsync(buffer, 0, count).ConfigureAwait(false);
