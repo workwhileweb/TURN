@@ -1,22 +1,20 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
-using System.Linq;
 using System.Net;
 using System.Net.Sockets;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Turn
 {
-    class Turn
+    public class Turn
     {
+        public Action<object>? Log;
+
         protected List<Tuple<IPEndPoint, IPEndPoint>> Rules { get; }
 
-        protected List<TcpListener> TcpListeners { get; } = new List<TcpListener>();
+        protected List<TcpListener> TcpListeners { get; } = new();
 
-        protected bool Started { get; set; } = false;
+        protected bool Started { get; set; }
 
         public Turn(IEnumerable<Tuple<IPEndPoint, IPEndPoint>> rules)
         {
@@ -24,53 +22,57 @@ namespace Turn
         }
 
         /// <summary>
-        /// Start.
+        /// Start
         /// </summary>
         public void Start()
         {
-            if (!Started)
+            if (Started) return;
+
+            var dict = new Dictionary<TcpListener, IPEndPoint>();
+
+            TcpListeners.Clear();
+
+            foreach (var turn in Rules)
             {
-                Dictionary<TcpListener, IPEndPoint> dict = new Dictionary<TcpListener, IPEndPoint>();
+                var tl = new TcpListener(turn.Item1);
+                tl.Start();
+                TcpListeners.Add(tl);
+                dict.Add(tl, turn.Item2);
+            }
 
-                TcpListeners.Clear();
-                foreach (var turn in Rules)
-                {
-                    TcpListener tl = new TcpListener(turn.Item1);
-                    tl.Start();
-                    TcpListeners.Add(tl);
-                    dict.Add(tl, turn.Item2);
-                }
+            Started = true;
 
-                Started = true;
-                foreach (var tl in TcpListeners)
-                {
-                    Loop(tl, dict[tl]);
-                }
+            foreach (var tl in TcpListeners)
+            {
+                Loop(tl, dict[tl]);
             }
         }
 
         /// <summary>
-        /// Close All Connections And Stop.
+        /// Close All Connections And Stop
         /// </summary>
+        // ReSharper disable once UnusedMember.Global
         public void Stop()
         {
-            if (Started)
-            {
-                foreach (var tl in TcpListeners)
-                {
-                    try
-                    {
-                        tl.Stop();
-                    }
-                    catch { }
-                }
+            if (!Started) return;
 
-                Started = false;
+            foreach (var tl in TcpListeners)
+            {
+                try
+                {
+                    tl.Stop();
+                }
+                catch
+                {
+                    // ignored
+                }
             }
+
+            Started = false;
         }
 
         /// <summary>
-        /// Accept Connections To tl, And Redirect Data To target.
+        /// Accept Connections To tl, And Redirect Data To target
         /// </summary>
         /// <param name="tl"></param>
         /// <param name="target"></param>
@@ -78,8 +80,8 @@ namespace Turn
         {
             while (Started)
             {
-                TcpClient tc0 = null;
-                TcpClient tc1 = null;
+                TcpClient? tc0 = null;
+                TcpClient? tc1 = null;
                 try
                 {
                     tc0 = await tl.AcceptTcpClientAsync().ConfigureAwait(false);
@@ -89,38 +91,38 @@ namespace Turn
                     Connect(tc0, tc1);
                     Connect(tc1, tc0);
 
-#if DEBUG
-                    Console.Write((tl.LocalEndpoint as IPEndPoint).ToString());
-                    Console.Write(" ");
-                    Console.Write(target.ToString());
-                    Console.Write(" ");
-                    Console.WriteLine("Connection Established.");
-#endif
+                    Log?.Invoke(new
+                    {
+                        Connection = "Established",
+                        IPAddress = (tl.LocalEndpoint as IPEndPoint)?.ToString(),
+                        target,
+                    });
                 }
                 catch
                 {
-                    if (tc0 != null)
+                    try
                     {
-                        try
-                        {
-                            tc0.Close();
-                        }
-                        catch { }
+                        tc0?.Close();
                     }
-                    if (tc1 != null)
+                    catch
                     {
-                        try
-                        {
-                            tc1.Close();
-                        }
-                        catch { }
+                        // ignored
+                    }
+
+                    try
+                    {
+                        tc1?.Close();
+                    }
+                    catch
+                    {
+                        // ignored
                     }
                 }
             }
         }
 
         /// <summary>
-        /// Read Data From tc0 And Write To tc1.
+        /// Read Data From tc0 And Write To tc1
         /// </summary>
         /// <param name="tc0"></param>
         /// <param name="tc1"></param>
@@ -128,12 +130,14 @@ namespace Turn
         {
             Stream s0 = tc0.GetStream();
             Stream s1 = tc1.GetStream();
-            byte[] buffer = new byte[65536];
+
+            var buffer = new byte[ushort.MaxValue];
+
             try
             {
                 while (true)
                 {
-                    int count = await s0.ReadAsync(buffer, 0, buffer.Length).ConfigureAwait(false);
+                    var count = await s0.ReadAsync(buffer, 0, buffer.Length).ConfigureAwait(false);
                     await s1.WriteAsync(buffer, 0, count).ConfigureAwait(false);
                 }
             }
@@ -142,24 +146,22 @@ namespace Turn
                 try
                 {
                     tc0.Close();
-#if DEBUG
-                    Console.Write(tc0.Client.LocalEndPoint.ToString());
-                    Console.Write(" ");
-                    Console.WriteLine("Connection Closed.");
-#endif
+                    Log?.Invoke(new { Closed = tc0.Client.LocalEndPoint });
                 }
-                catch { }
+                catch
+                {
+                    // ignored
+                }
 
                 try
                 {
                     tc1.Close();
-#if DEBUG
-                    Console.Write(tc1.Client.LocalEndPoint.ToString());
-                    Console.Write(" ");
-                    Console.WriteLine("Connection Closed.");
-#endif
+                    Log?.Invoke(new { Closed = tc1.Client.LocalEndPoint });
                 }
-                catch { }
+                catch
+                {
+                    // ignored
+                }
             }
         }
     }
