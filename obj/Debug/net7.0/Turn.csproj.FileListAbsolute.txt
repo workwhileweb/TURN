@@ -1,7 +1,5 @@
-D:\wWw\var\TURN\bin\Debug\net7.0\Turn.exe
 D:\wWw\var\TURN\bin\Debug\net7.0\Turn.dll.config
 D:\wWw\var\TURN\bin\Debug\net7.0\Turn.deps.json
-D:\wWw\var\TURN\bin\Debug\net7.0\Turn.runtimeconfig.json
 D:\wWw\var\TURN\bin\Debug\net7.0\Turn.dll
 D:\wWw\var\TURN\bin\Debug\net7.0\Turn.pdb
 D:\wWw\var\TURN\obj\Debug\net7.0\Turn.csproj.AssemblyReference.cache
@@ -10,5 +8,4 @@ D:\wWw\var\TURN\obj\Debug\net7.0\Turn.csproj.CoreCompileInputs.cache
 D:\wWw\var\TURN\obj\Debug\net7.0\Turn.dll
 D:\wWw\var\TURN\obj\Debug\net7.0\refint\Turn.dll
 D:\wWw\var\TURN\obj\Debug\net7.0\Turn.pdb
-D:\wWw\var\TURN\obj\Debug\net7.0\Turn.genruntimeconfig.cache
 D:\wWw\var\TURN\obj\Debug\net7.0\ref\Turn.dll
