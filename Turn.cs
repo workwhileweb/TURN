@@ -139,8 +139,8 @@ namespace Turn
             {
                 while (Started)
                 {
-                    var count = await s0.ReadAsync(buffer, 0, buffer.Length).ConfigureAwait(false);
-                    await s1.WriteAsync(buffer, 0, count).ConfigureAwait(false);
+                    var count = await s0.ReadAsync(buffer).ConfigureAwait(false);
+                    await s1.WriteAsync(buffer.AsMemory(0, count)).ConfigureAwait(false);
                 }
             }
             catch
